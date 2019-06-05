@@ -102,7 +102,11 @@ class LineSegment(object):
     def sine_of_angle_with(self, other_line_segment):
         return self.unit_vector.x * other_line_segment.unit_vector.y - \
         self.unit_vector.y * other_line_segment.unit_vector.x
-        
+
+    def cosine_of_angle_with(self, other_line_segment):
+        return self.unit_vector.x * other_line_segment.unit_vector.x + \
+        self.unit_vector.y * other_line_segment.unit_vector.y
+
     def dist_from_start_to_projection_of(self, point):
         diff_x = self.start.x - point.x
         diff_y = self.start.y - point.y

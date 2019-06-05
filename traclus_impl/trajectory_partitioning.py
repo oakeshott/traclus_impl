@@ -12,7 +12,7 @@ from traclus_impl.representative_trajectory_average_inputs import DECIMAL_MAX_DI
 
 """Added to offsets before taking the log of them. Helps to avoid
 taking the log of 0.0"""
-DISTANCE_OFFSET = 0.0000000001
+DISTANCE_OFFSET = 1
 
 def call_partition_trajectory(trajectory_point_list):
     if len(trajectory_point_list) < 2:
@@ -36,28 +36,34 @@ def call_partition_trajectory(trajectory_point_list):
     return partition_trajectory(trajectory_line_segs=trajectory_line_segs, 
                                 partition_cost_func=partition_cost_func, 
                                 no_partition_cost_func=no_partition_cost)
-                                  
 def partition_trajectory(trajectory_line_segs, 
                          partition_cost_func,
                          no_partition_cost_func):
     if len(trajectory_line_segs) < 1:
         raise ValueError
     low = 0
+    length = 1
     partition_points = [0]
     last_pt = trajectory_line_segs[len(trajectory_line_segs) - 1].end
     trajectory_line_segs.append(LineSegment(last_pt, last_pt))
-    
+
     for high in range(2, len(trajectory_line_segs)):
+        partition_line = LineSegment(trajectory_line_segs[low].start, 
+                trajectory_line_segs[high].start)
+        # , trajectory_line_segs[high].as_dict(), partition_cost_func(trajectory_line_segs, low, high), no_partition_cost_func(trajectory_line_segs, low, high))
+        print("mm", low, high, trajectory_line_segs[low].as_dict(), trajectory_line_segs[high].as_dict(), partition_cost_func(trajectory_line_segs, low, high), no_partition_cost_func(trajectory_line_segs, low, high))
         if trajectory_line_segs[high - 2].unit_vector\
         .almost_equals(trajectory_line_segs[high - 1].unit_vector):
             continue
         elif trajectory_line_segs[high].start.almost_equals(trajectory_line_segs[low].start) or \
         partition_cost_func(trajectory_line_segs, low, high) > \
         no_partition_cost_func(trajectory_line_segs, low, high):
+            print("ll", low, high, trajectory_line_segs[low].as_dict(), trajectory_line_segs[high].as_dict())
             partition_points.append(high - 1)
             low = high - 1
-        
-    partition_points.append(len(trajectory_line_segs) - 1)       
+
+    partition_points.append(len(trajectory_line_segs) - 1)
+    print("PARTITION_POINTS", [p for p in partition_points])
     return partition_points
 
 def partition_cost(trajectory_line_segs, low, high, model_cost_func, encoding_cost_func):
@@ -73,12 +79,19 @@ def no_partition_cost(trajectory_line_segs, low, high):
     if low >= high:
         raise IndexError
     total = 0.0
+    # for line_seg in trajectory_line_segs[low:high]:
+    #     # total += math.log(line_seg.length + DISTANCE_OFFSET, 2)
+    #     total += math.log(line_seg.length, 2)
+    # return total
     for line_seg in trajectory_line_segs[low:high]:
-        total += math.log(line_seg.length, 2)
-    return total
+        total += line_seg.length
+    print("DIST_NOPar", math.log(total, 2))
+    return math.log(total, 2)
 
 def model_cost(partition_line):
+    print("DIST", math.log(partition_line.length, 2))
     return math.log(partition_line.length, 2)
+    # return math.log(partition_line.length + DISTANCE_OFFSET, 2)
 
 def encoding_cost(trajectory_line_segs, low, high, 
                   partition_line, angular_dist_func, perpendicular_dist_func):
@@ -87,9 +100,13 @@ def encoding_cost(trajectory_line_segs, low, high,
     for line_seg in trajectory_line_segs[low:high]:
         total_angular += angular_dist_func(partition_line, line_seg)
         total_perp += perpendicular_dist_func(partition_line, line_seg)
-        
+    print('ANG', math.log(total_angular + DISTANCE_OFFSET, 2), "prep", math.log(total_perp + DISTANCE_OFFSET, 2))
     return math.log(total_angular + DISTANCE_OFFSET, 2) + \
         math.log(total_perp + DISTANCE_OFFSET, 2)
+    # for line_seg in trajectory_line_segs[low:high]:
+    #     total_angular += math.log(angular_dist_func(partition_line, line_seg) + DISTANCE_OFFSET, 2)
+    #     total_perp += math.log(perpendicular_dist_func(partition_line, line_seg) + DISTANCE_OFFSET, 2)
+    # return total_angular + total_perp
 
 
 

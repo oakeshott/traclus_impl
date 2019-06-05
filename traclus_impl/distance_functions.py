@@ -42,7 +42,16 @@ def __perpendicular_distance(line_a, line_b):
 def angular_distance(line_a, line_b):
     longer_line, shorter_line = determine_longer_and_shorter_lines(line_a, line_b)
     sine_coefficient = shorter_line.sine_of_angle_with(longer_line)
-    return abs(sine_coefficient * shorter_line.length)
+    cosine_coefficient = shorter_line.cosine_of_angle_with(longer_line)
+    # return abs(sine_coefficient * shorter_line.length)
+    # print(line_a.as_dict(), line_b.as_dict())
+    # print("sine", line_a.sine_of_angle_with(line_b), line_b.sine_of_angle_with(line_a))
+    # print("cosine", line_a.cosine_of_angle_with(line_b), line_b.cosine_of_angle_with(line_a))
+    # print(sine_coefficient, cosine_coefficient, shorter_line.length)
+    if cosine_coefficient >= 0:
+        return abs(sine_coefficient * shorter_line.length)
+    else:
+        return shorter_line.length
 
 #def __parrallel_distance(line_a, line_b):
 

@@ -60,31 +60,41 @@ class ClusterFactory():
         return Cluster()
         
 def dbscan(cluster_candidates_index, min_neighbors, cluster_factory):
+    print("---------------------------------------dbscan----------------------------------")
     clusters = []
     item_queue = collections.deque()
-    
     for item in cluster_candidates_index.candidates:
-        if not item.is_classified():  
+        print(item.id, item.line_segment.as_dict(), item)
+    print("---------------------------------------dbscan----------------------------------")
+    for item in cluster_candidates_index.candidates:
+        print(item.id, item.line_segment.as_dict())
+        if not item.is_classified():
             neighbors = cluster_candidates_index.find_neighbors_of(item)
+            # Definition 5 algorithm06
             if len(neighbors) >= min_neighbors:
                 cur_cluster = cluster_factory.new_cluster()
                 cur_cluster.add_member(item)
                 item.assign_to_cluster(cur_cluster)
-                
+                print(item.id, [p.id for p in neighbors], [p for p in neighbors])
+
                 for other_item in neighbors:
                     other_item.assign_to_cluster(cur_cluster)
                     cur_cluster.add_member(other_item)
                     item_queue.append(other_item)
-                    
+                # EXPANDED
                 expand_cluster(item_queue, cur_cluster, min_neighbors, \
                                cluster_candidates_index)
                 clusters.append(cur_cluster)
+                print("expanded", item.id, [l.id for l in cur_cluster.get_trajectory_line_segments()])
+
             else:
                 item.set_as_noise()
-                
     return clusters
-                
+"""
+Algorithm LINE SEGMENT CLUSTERING STEP 2
+"""
 def expand_cluster(item_queue, cluster, min_neighbors, cluster_candidates_index):
+    print("EXPANDING!!")
     while len(item_queue) > 0:
         item = item_queue.popleft()
         neighbors = cluster_candidates_index.find_neighbors_of(item)
@@ -94,10 +104,6 @@ def expand_cluster(item_queue, cluster, min_neighbors, cluster_candidates_index)
                     item_queue.append(other_item)
                 if other_item.is_noise() or not other_item.is_classified():
                     other_item.assign_to_cluster(cluster)
-                    cluster.add_member(other_item)    
-                
-                  
-    
-    
-    
-    
+                    cluster.add_member(other_item)
+
+    print("EXPANDED!!")

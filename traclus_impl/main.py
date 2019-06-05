@@ -55,7 +55,9 @@ def parse_input_and_run_traclus(input_file,
         assert parsed_input[required_param], "missing param: " + str(required_param)    
     
     trajs = map(lambda traj: map(lambda pt: Point(**pt), traj), parsed_input['trajectories'])
-            
+    for traj in trajs:
+        for p in traj:
+            print(p.as_dict())
     partitioned_traj_hook = \
     get_dump_partitioned_trajectories_hook(partitioned_trajectories_output_file_name)
         

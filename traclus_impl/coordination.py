@@ -25,10 +25,14 @@ def run_traclus(point_iterable_list, epsilon, min_neighbors, min_num_trajectorie
             for pt in traj[1:]:
                 if prev.distance_to(pt) > 0.0:
                     cleaned_traj.append(pt)
-                    prev = pt           
+                    prev = pt
             if len(cleaned_traj) > 1:
                 cleaned_input.append(cleaned_traj)
-    
+
+    for traj in cleaned_input:
+        print(traj)
+        for p in traj:
+            print(p.as_dict())
     return the_whole_enchilada(point_iterable_list=cleaned_input, \
                         epsilon=epsilon, \
                         min_neighbors=min_neighbors, \
@@ -46,13 +50,14 @@ def with_spikes_removed(trajectory):
     spikes_removed.append(trajectory[0])
     cur_index = 1
     while cur_index < len(trajectory) - 1:
-        if trajectory[cur_index - 1].distance_to(trajectory[cur_index + 1]) > 0.0:
-            spikes_removed.append(trajectory[cur_index])
+        # if trajectory[cur_index - 1].distance_to(trajectory[cur_index + 1]) > 0.0:
+        #     spikes_removed.append(trajectory[cur_index])
+        # cur_index += 1
+        spikes_removed.append(trajectory[cur_index])
         cur_index += 1
-        
     spikes_removed.append(trajectory[cur_index])
     return spikes_removed
-                        
+
 def the_whole_enchilada(point_iterable_list, epsilon, min_neighbors, min_num_trajectories_in_cluster, \
                         min_vertical_lines, \
                         min_prev_dist,\
@@ -60,11 +65,13 @@ def the_whole_enchilada(point_iterable_list, epsilon, min_neighbors, min_num_tra
                         clusters_hook=hooks.clusters_hook):
     trajectory_line_segment_factory = TrajectoryLineSegmentFactory()
     def _dbscan_caller(cluster_candidates):
+        print("CLUESTER CAND", [p for p in cluster_candidates])
         line_seg_index = BestAvailableClusterCandidateIndex(cluster_candidates, epsilon)
+        print("LINE SSEG INDEX", line_seg_index)
         return dbscan(cluster_candidates_index=line_seg_index, #TrajectoryLineSegmentCandidateIndex(cluster_candidates), \
                       min_neighbors=min_neighbors, \
                       cluster_factory=TrajectoryClusterFactory())
-        
+
     all_traj_segs_iter_from_all_points_caller = \
     get_all_trajectory_line_segments_iterable_from_all_points_iterable_caller(get_line_segs_from_points_func=get_trajectory_line_segments_from_points_iterable, \
                                                                               trajectory_line_segment_factory=trajectory_line_segment_factory, \
@@ -105,15 +112,17 @@ def representative_line_seg_iterable_from_all_points_iterable(point_iterable_lis
     rep_lines = []
     clusters = get_cluster_iterable_from_all_points_iterable_caller(point_iterable_list)
     for traj_cluster in clusters:
+        print("traj_cluster", traj_cluster)
         if traj_cluster.num_trajectories_contained() >= min_num_trajectories_in_cluster:
+            for l in traj_cluster.get_trajectory_line_segments():
+                print(l.line_segment)
             rep_lines.append(get_representative_line_seg_from_trajectory_caller(traj_cluster.get_trajectory_line_segments()))
-                
+    print(rep_lines)
     return rep_lines
 
 def get_cluster_iterable_from_all_points_iterable(point_iterable_list,  get_all_traj_segs_from_all_points_caller, \
                                                   dbscan_caller):
     return dbscan_caller(get_all_traj_segs_from_all_points_caller(point_iterable_list))
-    
 def get_all_trajectory_line_segments_iterable_from_all_points_iterable_caller(get_line_segs_from_points_func, \
                                               trajectory_line_segment_factory, trajectory_partitioning_func, \
                                               line_seg_from_points_func, \
@@ -126,13 +135,17 @@ def get_all_trajectory_line_segments_iterable_from_all_points_iterable_caller(ge
                                                                            line_seg_from_points_func=line_seg_from_points_func)
         if partitioned_points_hook:
             partitioned_points_hook(traj_line_segs)
+        print("TRAJ_LINE_SEGS", traj_line_segs)
         return traj_line_segs
     return _func
-
+"""
+PARTITION START
+"""
 def get_all_trajectory_line_segments_iterable_from_all_points_iterable(point_iterable_list, \
                                                                        get_line_segs_from_points_func, \
                                               trajectory_line_segment_factory, trajectory_partitioning_func, \
                                               line_seg_from_points_func):
+    print("POINT_ITER", point_iterable_list)
     out = []
     cur_trajectory_id = 0
     for point_trajectory in point_iterable_list:
@@ -150,18 +163,24 @@ def get_all_trajectory_line_segments_iterable_from_all_points_iterable(point_ite
           
         cur_trajectory_id += 1
         
+    print("OUT",  out)
     return out
         
 
+"""
+Trajectory Partitioning
+"""
 def get_trajectory_line_segments_from_points_iterable(point_iterable, trajectory_line_segment_factory, trajectory_id, \
                                                       trajectory_partitioning_func, line_seg_from_points_func):
     good_point_iterable = filter_by_indices(good_indices=trajectory_partitioning_func(trajectory_point_list=point_iterable), \
                              vals=point_iterable)
+    print("good_point_iterable", good_point_iterable)
     line_segs = consecutive_item_func_iterator_getter(consecutive_item_func=line_seg_from_points_func, \
                                                       item_iterable=good_point_iterable)
+    print("line_segs", line_segs)
     def _create_traj_line_seg(line_seg):
-        return trajectory_line_segment_factory.new_trajectory_line_seg(line_seg, trajectory_id=trajectory_id)
-    
+        return trajectory_line_segment_factory.new_trajectory_line_seg(line_seg, trajectory_id=trajectory_id) # create trajectroy from line segments
+
     return map(_create_traj_line_seg, line_segs)
 
 def filter_by_indices(good_indices, vals):

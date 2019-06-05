@@ -77,7 +77,7 @@ class RtreeTrajectoryLineSegmentCandidateIndex(ClusterCandidateIndex):
         self.get_bounding_box_of_line_segment(cluster_candidate.line_segment)
         possible_neighbor_ids = [n for n in self.idx.intersection(bounding_box)]
         actual_neighbors = []
-        
+        # Definition 4
         for id in possible_neighbor_ids:
             if id == None:
                 raise Exception("ids on these need to be set")
@@ -89,6 +89,10 @@ class RtreeTrajectoryLineSegmentCandidateIndex(ClusterCandidateIndex):
         cluster_candidate.set_num_neighbors(len(actual_neighbors))
         return actual_neighbors 
 
+    """
+    get bounding box of line segment
+    epsilon-neighborhood
+    """
     def get_bounding_box_of_line_segment(self, line_seg):
         btm = min(line_seg.start.y, line_seg.end.y) - self.epsilon
         top = max(line_seg.start.y, line_seg.end.y) + self.epsilon
